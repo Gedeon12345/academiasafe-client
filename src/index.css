@@ -1,0 +1,37 @@
+@import url('https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body { @apply bg-surface text-ink font-sans antialiased; }
+
+/* ---------- Thème sombre ----------
+   Les composants sont écrits en clair ; ces règles réassignent les couleurs claires quand <html class="dark">. */
+.dark body { background: #0B1220; color: #E2E8F0; }
+.dark .bg-white, .dark .bg-white\/95, .dark .bg-white\/90 { background-color: #111C2E; }
+.dark .bg-slate-50 { background-color: #0F1A2B; }
+.dark .bg-slate-100 { background-color: #16233A; }
+.dark .bg-slate-200 { background-color: #243350; }
+.dark .bg-blue-50, .dark .bg-blue-50\/60 { background-color: #14213D; }
+.dark .bg-blue-100 { background-color: #1B2B4D; }
+.dark .ring-blue-50\/60 { --tw-ring-color: #14213D; }
+.dark .bg-safe-soft { background-color: #053B2E; }
+.dark .bg-amber-50, .dark .bg-amber-100 { background-color: #3A2A08; }
+.dark .bg-red-50 { background-color: #3B1219; }
+.dark .text-slate-500, .dark .text-slate-600 { color: #9FB0C8; }
+.dark .text-slate-700, .dark .text-slate-800 { color: #CBD5E1; }
+.dark .text-brand { color: #8FB0FF; }
+.dark .text-safe-dark { color: #6EE7B7; }
+.dark .text-amber-700 { color: #FBBF24; }
+.dark .text-amber-900 { color: #FDE68A; }
+.dark .text-red-700 { color: #FCA5A5; }
+.dark .border-slate-100, .dark .border-slate-200, .dark .border-slate-300 { border-color: #263248; }
+.dark .border-slate-400 { border-color: #3B4A66; }
+.dark .border-brand { border-color: #5B84E6; }
+.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) { border-color: #263248; }
+.dark .hover\:bg-slate-50:hover { background-color: #16233A; }
+.dark .hover\:bg-blue-50:hover { background-color: #1B2B4D; }
+.dark input, .dark textarea, .dark select { background-color: #0F1A2B; color: #E2E8F0; border-color: #33425F; }
+.dark input::placeholder, .dark textarea::placeholder { color: #6B7C96; }
+.dark .leaflet-tile-pane { filter: brightness(.72) contrast(1.05) saturate(.85); }
+.dark .leaflet-container { background: #0F1A2B; }

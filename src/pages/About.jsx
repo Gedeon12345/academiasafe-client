@@ -32,7 +32,7 @@ export default function About() {
           <h2 className="text-2xl font-extrabold md:text-3xl">Pour qui ?</h2>
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             {[[GraduationCap, 'Étudiants', 'Cherchez sans compte, comparez, réservez et gardez votre reçu.', '/logements', 'Voir les logements'],
-              [Building2, 'Bailleurs', 'Publiez votre annonce et recevez les demandes par WhatsApp ou SMS.', '/bailleur/annonces/nouvelle', 'Déposer une annonce'],
+              [Building2, 'Bailleurs', 'Publiez votre annonce et répondez aux étudiants dans la messagerie, avec une alerte WhatsApp ou SMS à chaque message.', '/bailleur/annonces/nouvelle', 'Déposer une annonce'],
               [Users, 'Colocataires', 'Trouvez quelqu\'un dont le mode de vie vous ressemble.', '/colocataires', 'Voir les profils']].map(([Icon, t, d, to, cta]) => (
               <article key={t} className="flex flex-col rounded-2xl border border-slate-200 bg-white p-6"><Icon className="text-brand" aria-hidden="true" /><h3 className="mt-3 text-lg font-bold">{t}</h3><p className="mb-5 mt-1 flex-1 leading-relaxed text-slate-600">{d}</p><ButtonLink to={to} variant="outline">{cta}</ButtonLink></article>
             ))}

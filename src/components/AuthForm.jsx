@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from './ui';
 
@@ -17,7 +18,7 @@ export default function AuthForm({ onDone }) {
     const f = Object.fromEntries(new FormData(e.currentTarget));
     try {
       if (mode === 'login') await login(f.email, f.password);
-      else await register(f);
+      else await register({ ...f, acceptTerms: f.acceptTerms === 'on' });
       onDone?.();
     } catch (err) {
       setError(err.message);
@@ -55,6 +56,12 @@ export default function AuthForm({ onDone }) {
       <label className="text-sm font-semibold">Mot de passe</label>
       <input name="password" type="password" className={input} required minLength={mode === 'register' ? 8 : 1} autoComplete={mode === 'register' ? 'new-password' : 'current-password'} />
       {mode === 'register' && <p className="-mt-2 mb-3 text-xs text-slate-600">8 caractères minimum.</p>}
+      {mode === 'register' && (
+        <label className="mb-3 flex items-start gap-2.5 text-sm">
+          <input name="acceptTerms" type="checkbox" required className="mt-0.5 h-5 w-5 flex-none" />
+          <span>J'ai lu et j'accepte les <Link to="/conditions" target="_blank" className="font-bold text-brand underline">conditions d'utilisation</Link> et la <Link to="/confidentialite" target="_blank" className="font-bold text-brand underline">politique de confidentialité</Link>.</span>
+        </label>
+      )}
 
 
       {error && <p role="alert" className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">{error}</p>}

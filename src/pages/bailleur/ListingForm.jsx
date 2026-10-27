@@ -29,6 +29,7 @@ export default function ListingForm() {
   const [loc, setLoc] = useState(null);       // position du logement { lat, lng }
   const [campus, setCampus] = useState(null); // position du campus
   const [preview, setPreview] = useState(null); // { state, commute, error }
+  const [detected, setDetected] = useState({ state: 'idle', list: [], error: '' }); // universités trouvées automatiquement
   const [amenities, setAmenities] = useState([]);
   const [existing, setExisting] = useState([]);
   const [removed, setRemoved] = useState([]);
@@ -44,9 +45,9 @@ export default function ListingForm() {
       const l = d.data.find((x) => x._id === id);
       if (!l) return setLoad({ loading: false, error: '', missing: true });
       setF({ title: l.title, description: l.description || '', period: l.pricing.period, price: l.pricing.price, deposit: l.pricing.deposit || '',
-        neighborhood: l.neighborhood, campusTarget: l.campusTarget, addressLabel: l.addressLabel || '' });
+        neighborhood: l.neighborhood, campusTarget: l.campusAuto ? '' : l.campusTarget, addressLabel: l.addressLabel || '' });
       setLoc(l.location ? { lat: l.location.lat, lng: l.location.lng } : null);
-      setCampus(l.campusLocation ? { lat: l.campusLocation.lat, lng: l.campusLocation.lng } : null);
+      setCampus(l.campusLocation && !l.campusAuto ? { lat: l.campusLocation.lat, lng: l.campusLocation.lng } : null); // campus vide = détection automatique
       setAmenities(l.amenities); setExisting(l.images);
       setLoad({ loading: false, error: '', missing: false });
     }).catch((e) => setLoad({ loading: false, error: e.message, missing: false }));
@@ -54,17 +55,33 @@ export default function ListingForm() {
   useEffect(() => { if (editing) fetchListing(); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => () => files.forEach((x) => URL.revokeObjectURL(x.url)), []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Distance et trajet : calculés automatiquement dès que le logement et le campus sont choisis.
+  // Campus facultatif : s'il est vide, on cherche les universités les plus proches de l'adresse.
   useEffect(() => {
-    if (!loc || !campus) return setPreview(null);
+    if (!loc || campus) return setDetected({ state: 'idle', list: [], error: '' });
+    setDetected({ state: 'loading', list: [], error: '' });
+    const t = setTimeout(() => {
+      api.get('/geo/campuses' + qs({ lat: loc.lat, lng: loc.lng })).then((d) => setDetected({ state: 'ok', list: d.data, error: '' }))
+        .catch((e) => setDetected({ state: 'error', list: [], error: e.message }));
+    }, 400);
+    return () => clearTimeout(t);
+  }, [loc?.lat, loc?.lng, !!campus]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Destination du trajet : le campus choisi, sinon l'université détectée la plus proche.
+  const first = detected.list[0];
+  const target = campus || (first ? { lat: first.lat, lng: first.lng } : null);
+  const targetName = campus ? f.campusTarget : first?.name;
+
+  // Distance et trajet : calculés automatiquement dès que l'adresse et la destination sont connues.
+  useEffect(() => {
+    if (!loc || !target) return setPreview(null);
     setPreview({ state: 'loading' });
     const t = setTimeout(() => {
-      api.get('/geo/commute' + qs({ fromLat: loc.lat, fromLng: loc.lng, toLat: campus.lat, toLng: campus.lng }))
+      api.get('/geo/commute' + qs({ fromLat: loc.lat, fromLng: loc.lng, toLat: target.lat, toLng: target.lng }))
         .then((d) => setPreview({ state: 'ok', commute: d.commute }))
         .catch((e) => setPreview({ state: 'error', error: e.message }));
     }, 300);
     return () => clearTimeout(t);
-  }, [loc?.lat, loc?.lng, campus?.lat, campus?.lng]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [loc?.lat, loc?.lng, target?.lat, target?.lng]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const kept = existing.filter((p) => !removed.includes(p));
   const room = MAX_IMAGES - kept.length - files.length;
@@ -89,11 +106,11 @@ export default function ListingForm() {
     e.preventDefault();
     setError('');
     if (!loc) return setError("Choisissez l'adresse du logement dans la liste de suggestions, ou utilisez votre position.");
-    if (!campus) return setError('Choisissez le campus dans la liste de suggestions.');
     setBusy(true);
     const body = {
-      title: f.title, description: f.description, campusTarget: f.campusTarget, neighborhood: f.neighborhood, addressLabel: f.addressLabel,
-      location: loc, campusLocation: campus, amenities, // la distance est calculée par le serveur
+      title: f.title, description: f.description, neighborhood: f.neighborhood, addressLabel: f.addressLabel,
+      location: loc, amenities, // la distance est calculée par le serveur
+      autoCampus: !campus, ...(campus && { campusTarget: f.campusTarget, campusLocation: campus }), // campus vide : universités trouvées automatiquement
       pricing: { price: Number(f.price), period: f.period, deposit: Number(f.deposit) || 0 },
     };
     let listingId = id;
@@ -161,9 +178,19 @@ export default function ListingForm() {
             <Button type="button" variant="outline" onClick={locate}><LocateFixed size={18} className="mr-2" aria-hidden="true" />Ma position</Button>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
-            <GeoSearchInput id="campus" label="Campus ou université ciblé" placeholder="Université de Yaoundé I" initial={f.campusTarget} ok={!!campus} onSelect={pickCampus} onClear={() => setCampus(null)} />
+            <GeoSearchInput id="campus" label="Campus ou université (facultatif)" placeholder="Laisser vide : détection automatique" initial={f.campusTarget} ok={!!campus} onSelect={pickCampus} onClear={() => setCampus(null)} />
             <Field label="Quartier"><input className={input} required value={f.neighborhood} onChange={set('neighborhood')} /></Field>
           </div>
+          {!campus && (
+            <div className="rounded-xl bg-blue-50 p-3 text-sm" aria-live="polite">
+              <p className="font-semibold text-brand">Laissez le campus vide : nous cherchons automatiquement les universités les plus proches de votre adresse.</p>
+              {loc && detected.state === 'loading' && <p className="mt-1 text-slate-600">Recherche des universités proches…</p>}
+              {loc && detected.state === 'error' && <p role="alert" className="mt-1 font-semibold text-red-700">{detected.error} Vous pouvez choisir le campus à la main.</p>}
+              {loc && detected.state === 'ok' && (detected.list.length === 0
+                ? <p className="mt-1 font-semibold text-red-700">Aucune université trouvée à moins de 10 km : indiquez le campus à la main.</p>
+                : <ul className="mt-2 space-y-1">{detected.list.map((c, i) => <li key={c.name}>{i === 0 ? '★ ' : ''}<b>{c.name}</b> · {String(c.straightKm).replace('.', ',')} km à vol d'oiseau{i === 0 && ' (la plus proche)'}</li>)}</ul>)}
+            </div>
+          )}
         </section>
 
         <section className={`${card} space-y-3`}>
@@ -175,13 +202,14 @@ export default function ListingForm() {
       <div className="min-w-0 space-y-6 lg:sticky lg:top-32 lg:self-start">
         <section className={`${card} space-y-3`}>
           <h2 className="text-lg font-bold">Trajet vers le campus</h2>
-          {!loc || !campus ? <p className="text-sm text-slate-600">Choisissez l'adresse et le campus : la distance et le trajet se calculent tout seuls.</p>
+          {!loc ? <p className="text-sm text-slate-600">Choisissez l'adresse : la distance et le trajet se calculent tout seuls.</p>
+            : !target ? <p className="text-sm text-slate-600">{detected.state === 'loading' ? 'Recherche des universités proches…' : 'Aucune destination : indiquez le campus.'}</p>
             : preview?.state === 'loading' ? <div className="py-4"><Loader label="Calcul de l'itinéraire…" /></div>
             : preview?.state === 'error' ? <p role="alert" className="text-sm font-semibold text-red-700">{preview.error}</p>
             : preview?.state === 'ok' ? (
               <>
                 <Suspense fallback={<div className="grid h-64 place-items-center"><Loader label="Chargement de la carte…" /></div>}>
-                  <RouteMap from={loc} to={campus} path={preview.commute.path} walkPath={preview.commute.walkPath} fromLabel={f.title || 'Votre logement'} toLabel={f.campusTarget || 'Campus'} commute={preview.commute} />
+                  <RouteMap from={loc} to={target} path={preview.commute.path} walkPath={preview.commute.walkPath} fromLabel={f.title || 'Votre logement'} toLabel={targetName || 'Campus'} commute={preview.commute} />
                 </Suspense>
                 <CommuteCard commute={preview.commute} />
               </>

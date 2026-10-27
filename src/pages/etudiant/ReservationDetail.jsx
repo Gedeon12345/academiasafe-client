@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { Check, Download, SearchX, XCircle } from 'lucide-react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Check, Download, MessageCircle, SearchX, XCircle } from 'lucide-react';
 import { api, download } from '../../lib/api';
 import { fcfa } from '../../lib/format';
 import { useToast } from '../../context/ToastContext';
@@ -14,6 +14,7 @@ const OPERATOR = { mtn: 'MTN Mobile Money', orange: 'Orange Money' };
 export default function ReservationDetail() {
   const { id } = useParams();
   const toast = useToast();
+  const navigate = useNavigate();
   const [state, setState] = useState({ loading: true, booking: null, error: '' });
   const [tries, setTries] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -31,6 +32,10 @@ export default function ReservationDetail() {
 
   const b = state.booking;
   const s = b.snapshot || {};
+  const chat = async () => {
+    try { const d = await api.post('/chat/conversations', { kind: 'booking', bookingId: b._id }); navigate(`/messages/${d.conversation._id}`); }
+    catch (e) { toast(e.message, 'error'); }
+  };
   const getReceipt = async () => {
     setBusy(true);
     try { await download(`/bookings/${b._id}/receipt`, `recu-${b.receiptNumber}.pdf`); } catch (e) { toast(e.message, 'error'); } finally { setBusy(false); }
@@ -63,6 +68,7 @@ export default function ReservationDetail() {
         {b.hasReceipt
           ? <Button onClick={getReceipt} disabled={busy} className="flex-1"><Download size={18} className="mr-2" aria-hidden="true" />{busy ? 'Téléchargement…' : 'Télécharger le reçu PDF'}</Button>
           : <Button variant="outline" className="flex-1" onClick={() => setTries((t) => t + 1)}>Reçu en préparation, actualiser</Button>}
+        <Button variant="outline" className="flex-1" onClick={chat}><MessageCircle size={18} className="mr-2" aria-hidden="true" />Écrire au bailleur</Button>
         <ButtonLink to="/reservations" variant="outline" className="flex-1">Mes réservations</ButtonLink>
       </div>
       <p className="mt-4 text-center text-sm text-slate-600"><Link to={`/logements/${b.listing}`} className="font-bold text-brand">Revoir l'annonce</Link></p>

@@ -35,10 +35,11 @@ export default function Layout() {
   useEffect(() => setOpen(false), [pathname]);
   // Nombre de messages non lus (étudiant et bailleur), rafraîchi à chaque page et à la lecture des messages.
   useEffect(() => {
-    const load = () => (user && ['student', 'landlord'].includes(user.role) ? api.get('/messages/unread').then((d) => setUnread(d.count)).catch(() => {}) : setUnread(0));
+    const load = () => (user && ['student', 'landlord'].includes(user.role) ? api.get('/chat/unread').then((d) => setUnread(d.count)).catch(() => {}) : setUnread(0));
     load();
+    const timer = setInterval(() => document.visibilityState === 'visible' && load(), 20000); // messages non lus, quasi en direct
     window.addEventListener('as:messages-read', load);
-    return () => window.removeEventListener('as:messages-read', load);
+    return () => { clearInterval(timer); window.removeEventListener('as:messages-read', load); };
   }, [user?._id, pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const groups = [...roleLinks(user, unread), ['Plateforme', PUBLIC]];
@@ -85,7 +86,8 @@ export default function Layout() {
           <nav aria-label="Explorer"><b className="text-sm">Explorer</b><ul className="mt-2 space-y-1 text-sm text-slate-600">
             <li><Link to="/logements" className="hover:text-brand">Logements</Link></li><li><Link to="/colocataires" className="hover:text-brand">Colocataires</Link></li></ul></nav>
           <nav aria-label="Aide"><b className="text-sm">Aide</b><ul className="mt-2 space-y-1 text-sm text-slate-600">
-            <li><Link to="/faq" className="hover:text-brand">Sécurité et FAQ</Link></li><li><Link to="/about" className="hover:text-brand">À propos</Link></li></ul></nav>
+            <li><Link to="/faq" className="hover:text-brand">Sécurité et FAQ</Link></li><li><Link to="/about" className="hover:text-brand">À propos</Link></li>
+            <li><Link to="/conditions" className="hover:text-brand">Conditions d'utilisation</Link></li><li><Link to="/confidentialite" className="hover:text-brand">Confidentialité</Link></li></ul></nav>
         </div>
         <p className="border-t border-slate-200 py-4 text-center text-xs text-slate-600">© {new Date().getFullYear()} AcademiaSafe</p>
       </footer>
@@ -111,6 +113,7 @@ export default function Layout() {
               </div>
             ))}
             <div className="mt-auto p-3">
+              <p className="mb-3 flex flex-wrap gap-x-4 text-xs text-slate-600"><Link to="/conditions" className="py-2 underline">Conditions</Link><Link to="/confidentialite" className="py-2 underline">Confidentialité</Link></p>
               {user ? <Button variant="outline" className="w-full" onClick={logout}>Se déconnecter</Button>
                     : <Link to="/login" className="flex h-12 items-center justify-center rounded-xl bg-brand font-bold text-white">Se connecter</Link>}
             </div>

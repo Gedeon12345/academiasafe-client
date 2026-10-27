@@ -18,6 +18,7 @@ import ReviewForm from './pages/etudiant/ReviewForm';
 import Verify from './pages/Verify';
 import Roommates from './pages/Roommates';
 import Faq from './pages/Faq';
+import { Terms, Privacy } from './pages/Legal';
 import Disputes from './pages/Disputes';
 import Certification from './pages/bailleur/Certification';
 import AdminDashboard from './pages/admin/Dashboard';
@@ -53,6 +54,8 @@ export default function App() {
         <Route path="/colocataires" element={<Roommates />} />
         <Route path="/about" element={<About />} />
         <Route path="/faq" element={<Faq />} />
+        <Route path="/conditions" element={<Terms />} />
+        <Route path="/confidentialite" element={<Privacy />} />
         <Route path="/login" element={<Login />} />
         <Route path="/verifier/:token" element={<Verify />} />
 
@@ -64,6 +67,7 @@ export default function App() {
         <Route path="/reservations/:id" element={guard(['student'], <ReservationDetail />)} />
         <Route path="/profil-colocataire" element={guard(['student'], <RoommateProfileForm />)} />
         <Route path="/messages" element={guard(['student', 'landlord'], <Messages />)} />
+        <Route path="/messages/:id" element={guard(['student', 'landlord'], <Messages />)} />
         <Route path="/logements/:id/reserver" element={guard(['student'], <Reserve />)} />
         <Route path="/logements/:id/avis" element={guard(['student'], <ReviewForm />)} />
 

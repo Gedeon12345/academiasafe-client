@@ -98,7 +98,7 @@ export default function Roommates() {
         {!user && <p className="mt-6 text-center text-sm text-slate-600">Vous consultez les profils sans compte. <Link to="/login" className="font-bold text-brand">Connectez-vous</Link> pour contacter quelqu'un.</p>}
       </section>
 
-      <ContactDialog open={!!target} onClose={() => setTarget(null)} endpoint={target ? `/messages/roommate/${target._id}` : ''} title={`Écrire à ${target?.name || ''}`}
+      <ContactDialog open={!!target} onClose={() => setTarget(null)} start={target ? { kind: 'roommate', profileId: target._id } : null} title={`Écrire à ${target?.name || ''}`}
         hint="Présentez-vous et dites ce que vous cherchez (quartier, budget, date d'arrivée)." />
     </div>
   );

@@ -7,7 +7,7 @@ const SECTIONS = [
   ['Se loger en sécurité', [
     ['Comment éviter les arnaques ?', "Ne payez jamais en dehors de la plateforme, ne versez rien avant d'avoir posé vos questions au bailleur, et visitez le logement dès que possible. Un paiement fait ici génère un reçu PDF numéroté avec un QR code : si on vous propose un autre moyen de payer, méfiez-vous."],
     ['Que signifie « Cité certifiée » ?', "Le badge vert est attribué par notre équipe après un contrôle du logement. Il se voit sur les cartes et sur la fiche. Une annonce sans badge n'est pas forcément mauvaise, mais elle n'a pas encore été contrôlée."],
-    ["Mon numéro est-il visible par les bailleurs ?", "Non, pas avant que vous leur écriviez. Quand vous envoyez un message depuis une annonce, votre nom et votre numéro sont transmis au bailleur pour qu'il puisse vous répondre. Le numéro du bailleur n'est jamais affiché publiquement."],
+    ['Mon numéro de téléphone est-il visible ?', "Non. Tous vos échanges avec un bailleur ou un colocataire passent par la messagerie de l'application : personne ne voit votre numéro. Quand vous recevez un message alors que vous n'êtes pas connecté, une alerte WhatsApp ou SMS vous prévient, avec un lien vers la discussion."],
   ]],
   ['Réservation et paiement', [
     ["Qu'est-ce que l'acompte ?", "C'est la somme qui bloque le logement à votre nom : la caution de l'annonce, ou un loyer si elle n'en prévoit pas. Le montant exact s'affiche avant que vous payiez."],

@@ -20,9 +20,10 @@ const RouteMap = lazy(() => import('../components/RouteMap')); // Leaflet ne se 
 
 const box = 'rounded-2xl border border-slate-200 bg-white p-4';
 
-// Trajet vers le campus (calculé à l'enregistrement) ou vers une autre destination choisie par le visiteur.
+// Trajet vers le campus (calculé à l'enregistrement), vers une autre université proche, ou vers une destination choisie par le visiteur.
 function Commute({ listing }) {
   const [dest, setDest] = useState(null); // { label, lat, lng, state: 'loading'|'ok'|'error', commute, error }
+  const [sel, setSel] = useState(0);
   const choose = async (it) => {
     const base = { label: it.name, lat: it.lat, lng: it.lng };
     setDest({ ...base, state: 'loading' });
@@ -32,12 +33,25 @@ function Commute({ listing }) {
     } catch (e) { setDest({ ...base, state: 'error', error: e.message }); }
   };
   const custom = dest?.state === 'ok';
-  const hasCampus = listing.campusLocation?.lat != null && listing.location?.lat != null;
-  const active = custom ? { to: { lat: dest.lat, lng: dest.lng }, label: dest.label, commute: dest.commute }
-    : hasCampus ? { to: listing.campusLocation, label: listing.campusTarget, commute: listing.commute } : null;
+  const campuses = listing.campuses?.length ? listing.campuses
+    : listing.campusLocation?.lat != null ? [{ name: listing.campusTarget, location: listing.campusLocation, commute: listing.commute }] : [];
+  const cur = campuses[Math.min(sel, campuses.length - 1)];
+  const hasFrom = listing.location?.lat != null;
+  const active = custom ? { to: { lat: dest.lat, lng: dest.lng }, label: dest.label, commute: dest.commute } : cur && hasFrom ? { to: cur.location, label: cur.name, commute: cur.commute } : null;
   return (
     <section className={`${box} md:col-span-2`} aria-labelledby="trajet">
-      <h2 id="trajet" className="sr-only">Trajet</h2>
+      <h2 id="trajet" className="mb-3 text-lg font-bold">Trajet vers le campus</h2>
+      {campuses.length > 1 && !custom && (
+        <div role="tablist" aria-label="Universités proches" className="mb-4 flex flex-wrap gap-2">
+          {campuses.map((c, i) => (
+            <button key={c.name} role="tab" aria-selected={i === sel} onClick={() => setSel(i)}
+              className={`min-h-[2.75rem] rounded-full border px-4 py-1.5 text-left text-sm font-semibold ${i === sel ? 'border-brand bg-brand text-white' : 'border-slate-300 bg-white text-slate-700'}`}>
+              {c.name} <span className="font-normal opacity-80">· {String(c.commute.distanceKm).replace('.', ',')} km</span>
+            </button>
+          ))}
+        </div>
+      )}
+      {listing.campusAuto && !custom && <p className="mb-3 text-xs text-slate-600">Universités proches détectées automatiquement à partir de l'adresse du logement.</p>}
       <div className="grid gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         {active && (
           <Suspense fallback={<div className="grid h-64 place-items-center"><Loader label="Chargement de la carte…" /></div>}>
@@ -146,7 +160,7 @@ export default function ListingDetail() {
         </div>
       </div>
 
-      <ContactDialog open={contactOpen} onClose={() => setContactOpen(false)} endpoint={`/messages/listing/${l._id}`} title="Écrire au bailleur" hint={`À propos de « ${l.title} ». Le bailleur est prévenu par WhatsApp ou SMS.`} />
+      <ContactDialog open={contactOpen} onClose={() => setContactOpen(false)} start={{ kind: 'listing', listingId: l._id }} title="Écrire au bailleur" hint={`À propos de « ${l.title} ». Le bailleur répond dans votre messagerie.`} />
 
       <aside className="hidden lg:block">
         <div className="sticky top-32 space-y-3 rounded-2xl border border-slate-200 bg-white p-5">

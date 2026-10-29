@@ -73,3 +73,10 @@ export async function viewFile(path) {
     setTimeout(() => URL.revokeObjectURL(url), 60000);
   } catch (e) { w?.close(); throw e; }
 }
+
+// Charge une image protégée (capture d'écran d'un avis) et renvoie une adresse locale utilisable dans <img>.
+export async function blobUrl(path) {
+  const res = await fetch(BASE + path, { headers: { Authorization: `Bearer ${getToken()}` } });
+  if (!res.ok) throw new Error('Image indisponible');
+  return URL.createObjectURL(await res.blob());
+}

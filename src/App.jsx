@@ -18,6 +18,8 @@ import ReviewForm from './pages/etudiant/ReviewForm';
 import Verify from './pages/Verify';
 import Roommates from './pages/Roommates';
 import Faq from './pages/Faq';
+import Feedback from './pages/Feedback';
+import AdminFeedback from './pages/admin/AdminFeedback';
 import { Terms, Privacy } from './pages/Legal';
 import Disputes from './pages/Disputes';
 import Certification from './pages/bailleur/Certification';
@@ -54,6 +56,7 @@ export default function App() {
         <Route path="/colocataires" element={<Roommates />} />
         <Route path="/about" element={<About />} />
         <Route path="/faq" element={<Faq />} />
+        <Route path="/avis-site" element={<Feedback />} />
         <Route path="/conditions" element={<Terms />} />
         <Route path="/confidentialite" element={<Privacy />} />
         <Route path="/login" element={<Login />} />
@@ -83,6 +86,7 @@ export default function App() {
         <Route path="/admin" element={guard(['admin'], <AdminDashboard />)} />
         <Route path="/admin/annonces" element={guard(['admin'], <AdminListings />)} />
         <Route path="/admin/verifications" element={guard(['admin'], <AdminVerifications />)} />
+        <Route path="/admin/avis" element={guard(['admin'], <AdminFeedback />)} />
         <Route path="/admin/litiges" element={guard(['admin'], <AdminDisputes />)} />
         <Route path="/admin/utilisateurs" element={guard(['admin'], <AdminUsers />)} />
 

@@ -1,12 +1,12 @@
 import { Link } from 'react-router-dom';
-import { Building2, FileSearch, ShieldAlert, Users, Wallet } from 'lucide-react';
+import { Building2, FileSearch, MessageSquareText, ShieldAlert, Users, Wallet } from 'lucide-react';
 import { useApi } from '../../lib/useApi';
 import { fcfa } from '../../lib/format';
 import { ErrorState, PageLoader } from '../../components/feedback';
 import { when } from '../../components/admin';
 
 const LABEL = { 'listing.approve': 'Annonce approuvée', 'listing.reject': 'Annonce refusée', 'listing.certify': 'Badge attribué', 'listing.uncertify': 'Badge retiré', 'user.suspend': 'Compte suspendu', 'user.reactivate': 'Compte réactivé',
-  'verification.approve': 'Bailleur certifié', 'verification.reject': 'Dossier refusé', 'verification.view': 'Pièce consultée', 'dispute.in_review': 'Litige pris en charge', 'dispute.resolved': 'Litige résolu', 'dispute.rejected': 'Litige clos' };
+  'verification.approve': 'Bailleur certifié', 'verification.reject': 'Dossier refusé', 'verification.view': 'Pièce consultée', 'dispute.in_review': 'Litige pris en charge', 'dispute.resolved': 'Litige résolu', 'dispute.rejected': 'Litige clos', 'feedback.update': 'Avis du site traité', 'feedback.delete': 'Avis du site supprimé' };
 
 export default function Dashboard() {
   const [s, reload] = useApi('/admin/stats');
@@ -17,15 +17,16 @@ export default function Dashboard() {
     [Building2, 'Annonces à valider', d.listings.pending, '/admin/annonces'],
     [FileSearch, 'Dossiers bailleurs à vérifier', d.verificationsPending, '/admin/verifications'],
     [ShieldAlert, 'Litiges ouverts', d.disputesOpen, '/admin/litiges'],
+    [MessageSquareText, 'Avis du site à lire', d.feedback.new, '/admin/avis'],
   ];
-  const stats = [['Annonces publiées', d.listings.approved], ['Cités certifiées', d.listings.certified], ['Étudiants', d.users.students], ['Bailleurs', d.users.landlords], ['Réservations payées', d.bookings.count], ['Avis', d.reviews]];
+  const stats = [['Annonces publiées', d.listings.approved], ['Cités certifiées', d.listings.certified], ['Étudiants', d.users.students], ['Bailleurs', d.users.landlords], ['Réservations payées', d.bookings.count], ['Avis sur les logements', d.reviews], ['Note du site', d.feedback.ratings ? `${String(d.feedback.average).replace('.', ',')} / 5` : '–']];
 
   return (
     <div className="px-4 py-5 md:px-6 md:py-8 xl:px-10">
       <h1 className="text-2xl font-extrabold md:text-3xl">Tableau de bord</h1>
 
       <h2 className="mb-3 mt-6 font-bold">À traiter</h2>
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {todo.map(([Icon, label, n, to]) => (
           <Link key={to} to={to} className={`flex items-center gap-4 rounded-2xl border bg-white p-5 hover:border-brand ${n > 0 ? 'border-amber-400' : 'border-slate-200'}`}>
             <span className="flex h-12 w-12 flex-none items-center justify-center rounded-full bg-blue-50 text-brand"><Icon aria-hidden="true" /></span>

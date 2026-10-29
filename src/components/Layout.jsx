@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { Menu, MessageSquarePlus, X } from 'lucide-react';
 import { useAuth, homeFor } from '../context/AuthContext';
 import AuthModal from './AuthModal';
 import ThemeToggle from './ThemeToggle';
 import { api } from '../lib/api';
 import { Button } from './ui';
+
+const TITLES = [[/^\/$/, 'Logement étudiant vérifié'], [/^\/logements\/[^/]+/, 'Logement'], [/^\/logements/, 'Logements'], [/^\/colocataires/, 'Colocataires'], [/^\/faq/, 'Sécurité et FAQ'], [/^\/about/, 'À propos'],
+  [/^\/messages/, 'Messagerie'], [/^\/favoris/, 'Mes favoris'], [/^\/reservations/, 'Mes réservations'], [/^\/admin/, 'Administration'], [/^\/bailleur/, 'Espace bailleur'], [/^\/avis-site/, 'Donner mon avis'],
+  [/^\/conditions/, "Conditions d'utilisation"], [/^\/confidentialite/, 'Confidentialité'], [/^\/login/, 'Connexion'], [/^\/litiges/, 'Mes signalements']];
 
 const PUBLIC = [['/logements', 'Logements'], ['/colocataires', 'Colocataires'], ['/faq', 'Sécurité et FAQ'], ['/about', 'À propos']];
 
@@ -14,7 +18,7 @@ function roleLinks(user, unread = 0) {
   const msg = ['/messages', unread > 0 ? `Mes messages (${unread})` : 'Mes messages'];
   if (user?.role === 'student') return [['Étudiant', [['/favoris', 'Mes favoris'], ['/reservations', 'Mes réservations'], ['/profil-colocataire', 'Mon profil colocataire'], ['/litiges', 'Mes signalements'], msg]]];
   if (user?.role === 'landlord') return [['Bailleur', [['/bailleur/annonces', 'Mes annonces'], ['/bailleur/annonces/nouvelle', 'Déposer une annonce'], ['/bailleur/reservations', 'Réservations reçues'], ['/bailleur/certification', 'Certification'], ['/litiges', 'Mes signalements'], msg]]];
-  if (user?.role === 'admin') return [['Administration', [['/admin', 'Tableau de bord'], ['/admin/annonces', 'Annonces'], ['/admin/verifications', 'Certifications'], ['/admin/litiges', 'Litiges'], ['/admin/utilisateurs', 'Utilisateurs']]]];
+  if (user?.role === 'admin') return [['Administration', [['/admin', 'Tableau de bord'], ['/admin/annonces', 'Annonces'], ['/admin/verifications', 'Certifications'], ['/admin/avis', unread > 0 ? `Avis du site (${unread})` : 'Avis du site'], ['/admin/litiges', 'Litiges'], ['/admin/utilisateurs', 'Utilisateurs']]]];
   return [];
 }
 
@@ -33,21 +37,29 @@ export default function Layout() {
     return () => { window.removeEventListener('as:slow', on); window.removeEventListener('as:ok', off); };
   }, []);
   useEffect(() => setOpen(false), [pathname]);
+  useEffect(() => { const t = TITLES.find(([re]) => re.test(pathname))?.[1]; document.title = t ? `${t} · AcademiaSafe` : 'AcademiaSafe'; }, [pathname]);
   // Nombre de messages non lus (étudiant et bailleur), rafraîchi à chaque page et à la lecture des messages.
   useEffect(() => {
-    const load = () => (user && ['student', 'landlord'].includes(user.role) ? api.get('/chat/unread').then((d) => setUnread(d.count)).catch(() => {}) : setUnread(0));
+    const load = () => {
+      if (!user) return setUnread(0);
+      if (user.role === 'admin') return api.get('/admin/feedback/count').then((d) => setUnread(d.new)).catch(() => {}); // avis du site à lire
+      if (['student', 'landlord'].includes(user.role)) return api.get('/chat/unread').then((d) => setUnread(d.count)).catch(() => {});
+      setUnread(0);
+    };
     load();
     const timer = setInterval(() => document.visibilityState === 'visible' && load(), 20000); // messages non lus, quasi en direct
     window.addEventListener('as:messages-read', load);
     return () => { clearInterval(timer); window.removeEventListener('as:messages-read', load); };
   }, [user?._id, pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const groups = [...roleLinks(user, unread), ['Plateforme', PUBLIC]];
+  const groups = [...roleLinks(user, unread), ['Plateforme', [...PUBLIC, ['/avis-site', 'Donner mon avis']]]];
+  const showFab = !/^\/(messages|avis-site|logements\/|admin)/.test(pathname); // le bouton « Votre avis » se range quand il gênerait
   const tabs = [['/', 'Accueil'], ['/logements', 'Logements'], ['/colocataires', 'Colocs'], [user ? homeFor(user.role) : '/login', 'Compte']];
 
   return (
     <div className="flex min-h-screen flex-col">
       {/* En-tête : menu burger < md, navigation complète >= md */}
+      <a href="#contenu" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[100] focus:rounded-lg focus:bg-brand focus:px-4 focus:py-3 focus:font-bold focus:text-white">Aller au contenu</a>
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-white">
         <div className="mx-auto flex h-[60px] max-w-[1920px] items-center gap-6 px-4 md:px-8">
           <Link to="/" className="text-xl font-extrabold text-brand">AcademiaSafe</Link>
@@ -78,7 +90,7 @@ export default function Layout() {
       </header>
       {slow && <div role="status" className="bg-amber-100 px-4 py-2 text-center text-sm font-semibold text-amber-900">Le serveur se réveille (version gratuite) : patientez environ 30 secondes, la page va s'afficher.</div>}
 
-      <main className="mx-auto w-full max-w-[1920px] flex-1 pb-20 md:px-4 md:pb-8 xl:px-8"><Outlet /></main>
+      <main id="contenu" tabIndex={-1} className="outline-none mx-auto w-full max-w-[1920px] flex-1 pb-20 md:px-4 md:pb-8 xl:px-8"><Outlet /></main>
 
       <footer className="hidden border-t border-slate-200 bg-white md:block">
         <div className="mx-auto grid max-w-[1920px] gap-8 px-8 py-10 md:grid-cols-4">
@@ -86,7 +98,7 @@ export default function Layout() {
           <nav aria-label="Explorer"><b className="text-sm">Explorer</b><ul className="mt-2 space-y-1 text-sm text-slate-600">
             <li><Link to="/logements" className="hover:text-brand">Logements</Link></li><li><Link to="/colocataires" className="hover:text-brand">Colocataires</Link></li></ul></nav>
           <nav aria-label="Aide"><b className="text-sm">Aide</b><ul className="mt-2 space-y-1 text-sm text-slate-600">
-            <li><Link to="/faq" className="hover:text-brand">Sécurité et FAQ</Link></li><li><Link to="/about" className="hover:text-brand">À propos</Link></li>
+            <li><Link to="/faq" className="hover:text-brand">Sécurité et FAQ</Link></li><li><Link to="/avis-site" className="hover:text-brand">Donner votre avis</Link></li><li><Link to="/about" className="hover:text-brand">À propos</Link></li>
             <li><Link to="/conditions" className="hover:text-brand">Conditions d'utilisation</Link></li><li><Link to="/confidentialite" className="hover:text-brand">Confidentialité</Link></li></ul></nav>
         </div>
         <p className="border-t border-slate-200 py-4 text-center text-xs text-slate-600">© {new Date().getFullYear()} AcademiaSafe</p>
@@ -119,6 +131,11 @@ export default function Layout() {
             </div>
           </aside>
         </div>
+      )}
+      {showFab && (
+        <Link to="/avis-site" state={{ from: pathname }} className="fixed bottom-20 left-3 z-30 flex h-11 items-center gap-2 rounded-full bg-ink px-4 text-sm font-bold text-white shadow-lg md:bottom-6 md:left-6">
+          <MessageSquarePlus size={18} aria-hidden="true" />Votre avis
+        </Link>
       )}
       <AuthModal />
     </div>

@@ -107,7 +107,7 @@ function Thread({ id }) {
   return (
     <section className="flex h-[calc(100dvh-13rem)] min-h-[420px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white" aria-label={`Discussion avec ${conv.other.name}`}>
       <header className="flex items-center gap-3 border-b border-slate-200 px-3 py-3">
-        <button onClick={() => navigate('/messages')} aria-label="Retour aux discussions" className="flex h-11 w-11 flex-none items-center justify-center rounded-full hover:bg-slate-100 lg:hidden"><ArrowLeft /></button>
+        <button onClick={() => navigate('/messages')} aria-label="Retour aux discussions" className="flex h-11 w-11 flex-none items-center justify-center rounded-full hover:bg-slate-100 xl:hidden"><ArrowLeft /></button>
         <span className="flex h-11 w-11 flex-none items-center justify-center rounded-full bg-brand font-extrabold text-white" aria-hidden="true">{conv.other.name.slice(0, 1)}</span>
         <div className="min-w-0">
           <p className="truncate font-bold">{conv.other.name} <span className="ml-1 rounded-full bg-slate-200 px-2 py-0.5 text-xs font-bold text-slate-700">{ROLE[conv.other.role]}</span></p>
@@ -145,10 +145,10 @@ export default function Messages() {
   const { id } = useParams();
   return (
     <div className="px-4 py-4 md:px-6 md:py-6 xl:px-10">
-      <h1 className={`mb-4 text-2xl font-extrabold md:text-3xl ${id ? 'hidden lg:block' : ''}`}>Messagerie</h1>
-      <div className="grid gap-4 lg:grid-cols-[minmax(300px,380px)_minmax(0,1fr)]">
-        <div className={id ? 'hidden lg:block' : ''}><Inbox activeId={id} /></div>
-        <div className={id ? '' : 'hidden lg:block'}>
+      <h1 className={`mb-4 text-2xl font-extrabold md:text-3xl ${id ? 'hidden xl:block' : ''}`}>Messagerie</h1>
+      <div className="grid gap-4 xl:grid-cols-[minmax(300px,380px)_minmax(0,1fr)]">
+        <div className={id ? 'hidden xl:block' : ''}><Inbox activeId={id} /></div>
+        <div className={id ? '' : 'hidden xl:block'}>
           {id ? <Thread key={id} id={id} /> : <EmptyState icon={MessageCircle} title="Choisissez une discussion" text="Sélectionnez une conversation à gauche pour lire et répondre." />}
         </div>
       </div>

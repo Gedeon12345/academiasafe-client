@@ -1,33 +1,60 @@
 import { Link } from 'react-router-dom';
-import { Heart, Users, CalendarCheck, LogOut, MessageCircle } from 'lucide-react';
+import { ArrowRight, CalendarCheck, Heart, MessageCircle, Search, Users } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useBadges } from '../../context/BadgeContext';
 import { useFavorites } from '../../context/FavoritesContext';
-import { Button } from '../../components/ui';
+import { useApi } from '../../lib/useApi';
+import { fcfa } from '../../lib/format';
+import { ButtonLink } from '../../components/ui';
+import PageHeader from '../../components/PageHeader';
 
 export default function Account() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { count } = useFavorites();
+  const { unread } = useBadges();
+  const [b] = useApi('/bookings/mine');
+  const paid = (b.data?.data || []).filter((x) => x.paymentStatus === 'success');
   const tiles = [
-    [Heart, 'Mes favoris', `${count} logement${count > 1 ? 's' : ''} enregistré${count > 1 ? 's' : ''}`, '/favoris'],
-    [CalendarCheck, 'Mes réservations', 'Réservations et reçus PDF', '/reservations'],
-    [Users, 'Mon profil colocataire', 'Budget, mode de vie, affinités', '/profil-colocataire'],
-    [MessageCircle, 'Mes messages', 'Échanges avec les bailleurs et colocataires', '/messages'],
+    [Heart, 'Favoris', count, 'logements enregistrés', '/favoris'],
+    [CalendarCheck, 'Réservations', paid.length, 'confirmées', '/reservations'],
+    [MessageCircle, 'Messages', unread, unread > 1 ? 'non lus' : 'non lu', '/messages'],
+    [Users, 'Colocation', '→', 'mon profil', '/profil-colocataire'],
   ];
+  const next = [
+    count === 0 && ['Enregistrez vos logements préférés', 'Touchez le marque-page sur une annonce pour la retrouver ici et la comparer aux autres.', '/logements', 'Parcourir les logements'],
+    paid.length === 0 && ['Réservez pour bloquer un logement', "L'acompte par Mobile Money bloque le logement à votre nom et produit un reçu PDF vérifiable.", '/logements', 'Trouver un logement'],
+    ['Cherchez un colocataire compatible', "Créez votre profil : chaque étudiant affiche son taux d'affinité avec vous.", '/profil-colocataire', 'Mon profil colocataire'],
+  ].filter(Boolean).slice(0, 2);
+
   return (
     <div className="px-4 py-5 md:px-6 md:py-8 xl:px-10">
-      <div className="mb-6 flex items-center gap-4">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-brand text-xl font-extrabold text-white" aria-hidden="true">{user.name.slice(0, 2).toUpperCase()}</div>
-        <div><h1 className="text-2xl font-extrabold md:text-3xl">Bonjour {user.name.split(' ')[0]}</h1><p className="text-slate-600">{user.email}</p></div>
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {tiles.map(([Icon, title, text, to]) => (
-          <Link key={to} to={to} className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 hover:border-brand">
-            <span className="flex h-12 w-12 flex-none items-center justify-center rounded-full bg-blue-50 text-brand"><Icon aria-hidden="true" /></span>
-            <span><b className="block">{title}</b><span className="text-sm text-slate-600">{text}</span></span>
+      <PageHeader title={`Bonjour ${user.name.split(' ')[0]}`} text="Votre recherche de logement, au même endroit." actions={<ButtonLink to="/logements"><Search size={18} aria-hidden="true" />Chercher un logement</ButtonLink>} />
+      <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+        {tiles.map(([Icon, label, n, sub, to]) => (
+          <Link key={label} to={to} className="rounded-2xl border border-slate-200 bg-white p-5 transition hover:border-brand">
+            <Icon className="text-brand" size={22} aria-hidden="true" /><p className="mt-3 font-display text-4xl font-extrabold">{n}</p><p className="font-semibold">{label}</p><p className="text-sm text-slate-600">{sub}</p>
           </Link>
         ))}
       </div>
-      <Button variant="outline" className="mt-8" onClick={logout}><LogOut size={18} className="mr-2" aria-hidden="true" />Se déconnecter</Button>
+
+      <div className="mt-6 grid gap-6 xl:grid-cols-[1.4fr_1fr]">
+        <section className="rounded-2xl border border-slate-200 bg-white p-5" aria-labelledby="mr">
+          <div className="mb-3 flex items-center justify-between"><h2 id="mr" className="text-lg font-extrabold">Mes dernières réservations</h2><Link to="/reservations" className="text-sm font-bold text-brand">Tout voir</Link></div>
+          {paid.length === 0 ? <p className="py-6 text-center text-slate-600">Aucune réservation pour l'instant.</p> : (
+            <ul className="divide-y divide-slate-200">
+              {paid.slice(0, 3).map((r) => <li key={r._id}><Link to={`/reservations/${r._id}`} className="flex items-center justify-between gap-3 py-3 hover:text-brand"><span className="min-w-0"><b className="block truncate">{r.snapshot?.title}</b><span className="text-sm text-slate-600">Reçu n° {r.receiptNumber}</span></span><b className="flex-none">{fcfa(r.amountPaid)}</b></Link></li>)}
+            </ul>
+          )}
+        </section>
+        <section className="rounded-2xl bg-brand p-5 text-white" aria-labelledby="nx">
+          <h2 id="nx" className="text-lg font-extrabold">Pour continuer</h2>
+          <ul className="mt-3 space-y-4">
+            {next.map(([t, d, to, cta]) => (
+              <li key={t}><p className="font-bold">{t}</p><p className="text-sm leading-relaxed text-blue-100">{d}</p><Link to={to} className="mt-1 inline-flex h-10 items-center gap-1 font-bold text-taxi">{cta}<ArrowRight size={16} aria-hidden="true" /></Link></li>
+            ))}
+          </ul>
+        </section>
+      </div>
     </div>
   );
 }

@@ -6,7 +6,7 @@ export const useAuth = () => useContext(Ctx);
 
 // Page d'atterrissage de chaque rôle (aucun rôle ne voit les pages d'un autre).
 export const homeFor = (role) =>
-  ({ student: '/compte', landlord: '/bailleur/annonces', admin: '/admin' }[role] || '/');
+  ({ student: '/compte', landlord: '/bailleur', admin: '/admin' }[role] || '/');
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);

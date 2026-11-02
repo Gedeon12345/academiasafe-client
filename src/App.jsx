@@ -1,6 +1,8 @@
 import { Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import RequireRole from './components/RequireRole';
+import DashboardShell from './components/DashboardShell';
+import LandlordOverview from './pages/bailleur/Overview';
 import Home from './pages/Home';
 import ListingDetail from './pages/ListingDetail';
 import Login from './pages/Login';
@@ -32,18 +34,10 @@ import About from './pages/About';
 import ReceivedBookings from './pages/bailleur/ReceivedBookings';
 import Messages from './pages/Messages';
 import RoommateProfileForm from './pages/etudiant/RoommateProfileForm';
-import { EmptyState } from './components/feedback';
-import { ButtonLink } from './components/ui';
-import { Hammer } from 'lucide-react';
 
-// Pages à construire aux étapes suivantes.
-const Soon = ({ title }) => (
-  <div className="px-4 py-12">
-    <EmptyState icon={Hammer} title={title} text="Cette page arrive très bientôt. Nous la construisons étape par étape."
-      actions={<ButtonLink to="/">Retour à l'accueil</ButtonLink>} />
-  </div>
-);
 const guard = (roles, el) => <RequireRole roles={roles}>{el}</RequireRole>;
+// Les espaces connectés partagent une mise en page avec barre latérale.
+const space = (roles) => guard(roles, <DashboardShell />);
 
 export default function App() {
   return (
@@ -62,33 +56,46 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/verifier/:token" element={<Verify />} />
 
-        {/* Étudiant uniquement */}
-        <Route path="/compte" element={guard(['student'], <Account />)} />
-        <Route path="/favoris" element={guard(['student'], <Favorites />)} />
-        <Route path="/favoris/comparer" element={guard(['student'], <Compare />)} />
-        <Route path="/reservations" element={guard(['student'], <Reservations />)} />
-        <Route path="/reservations/:id" element={guard(['student'], <ReservationDetail />)} />
-        <Route path="/profil-colocataire" element={guard(['student'], <RoommateProfileForm />)} />
-        <Route path="/messages" element={guard(['student', 'landlord'], <Messages />)} />
-        <Route path="/messages/:id" element={guard(['student', 'landlord'], <Messages />)} />
+        {/* Étudiant : actions plein écran */}
         <Route path="/logements/:id/reserver" element={guard(['student'], <Reserve />)} />
         <Route path="/logements/:id/avis" element={guard(['student'], <ReviewForm />)} />
 
-        {/* Bailleur uniquement */}
-        <Route path="/bailleur/annonces" element={guard(['landlord'], <MyListings />)} />
-        <Route path="/bailleur/certification" element={guard(['landlord'], <Certification />)} />
-        <Route path="/litiges" element={guard(['student', 'landlord'], <Disputes />)} />
-        <Route path="/bailleur/reservations" element={guard(['landlord'], <ReceivedBookings />)} />
-        <Route path="/bailleur/annonces/nouvelle" element={guard(['landlord'], <ListingForm />)} />
-        <Route path="/bailleur/annonces/:id/modifier" element={guard(['landlord'], <ListingForm />)} />
+        {/* Espace étudiant */}
+        <Route element={space(['student'])}>
+          <Route path="/compte" element={<Account />} />
+          <Route path="/favoris" element={<Favorites />} />
+          <Route path="/favoris/comparer" element={<Compare />} />
+          <Route path="/reservations" element={<Reservations />} />
+          <Route path="/reservations/:id" element={<ReservationDetail />} />
+          <Route path="/profil-colocataire" element={<RoommateProfileForm />} />
+        </Route>
 
-        {/* Admin uniquement */}
-        <Route path="/admin" element={guard(['admin'], <AdminDashboard />)} />
-        <Route path="/admin/annonces" element={guard(['admin'], <AdminListings />)} />
-        <Route path="/admin/verifications" element={guard(['admin'], <AdminVerifications />)} />
-        <Route path="/admin/avis" element={guard(['admin'], <AdminFeedback />)} />
-        <Route path="/admin/litiges" element={guard(['admin'], <AdminDisputes />)} />
-        <Route path="/admin/utilisateurs" element={guard(['admin'], <AdminUsers />)} />
+        {/* Partagé étudiant et bailleur */}
+        <Route element={space(['student', 'landlord'])}>
+          <Route path="/messages" element={<Messages />} />
+          <Route path="/messages/:id" element={<Messages />} />
+          <Route path="/litiges" element={<Disputes />} />
+        </Route>
+
+        {/* Espace bailleur */}
+        <Route element={space(['landlord'])}>
+          <Route path="/bailleur" element={<LandlordOverview />} />
+          <Route path="/bailleur/annonces" element={<MyListings />} />
+          <Route path="/bailleur/annonces/nouvelle" element={<ListingForm />} />
+          <Route path="/bailleur/annonces/:id/modifier" element={<ListingForm />} />
+          <Route path="/bailleur/reservations" element={<ReceivedBookings />} />
+          <Route path="/bailleur/certification" element={<Certification />} />
+        </Route>
+
+        {/* Espace admin */}
+        <Route element={space(['admin'])}>
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/annonces" element={<AdminListings />} />
+          <Route path="/admin/verifications" element={<AdminVerifications />} />
+          <Route path="/admin/avis" element={<AdminFeedback />} />
+          <Route path="/admin/litiges" element={<AdminDisputes />} />
+          <Route path="/admin/utilisateurs" element={<AdminUsers />} />
+        </Route>
 
         <Route path="*" element={<NotFound />} />
       </Route>

@@ -3,8 +3,10 @@ import { Check, Star } from 'lucide-react';
 
 const focus = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand';
 const VARIANTS = {
-  primary: 'bg-brand text-white hover:bg-brand-dark',
+  primary: 'bg-brand text-white shadow-sm hover:bg-brand-dark',
   outline: 'bg-white text-brand border-2 border-brand hover:bg-blue-50',
+  accent: 'bg-taxi text-ink shadow-sm hover:brightness-95',
+  soft: 'bg-blue-50 text-brand hover:bg-blue-100',
 };
 
 export function Button({ variant = 'primary', className = '', ...props }) {

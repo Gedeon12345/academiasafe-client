@@ -1,9 +1,18 @@
-@import url('https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700;800&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-body { @apply bg-surface text-ink font-sans antialiased; }
+@layer base {
+  body { @apply bg-surface text-ink font-sans antialiased; }
+  h1, h2, h3 { @apply font-display tracking-tight; text-wrap: balance; }
+  :focus-visible { outline: 2px solid #1E40AF; outline-offset: 2px; }
+}
+@layer components {
+  /* Les blocs « carte » ont une ombre douce et le même rayon partout. */
+  .rounded-2xl.bg-white, .rounded-3xl.bg-white { box-shadow: theme('boxShadow.card'); }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
 
 /* ---------- Thème sombre ----------
    Les composants sont écrits en clair ; ces règles réassignent les couleurs claires quand <html class="dark">. */
@@ -35,3 +44,6 @@ body { @apply bg-surface text-ink font-sans antialiased; }
 .dark input::placeholder, .dark textarea::placeholder { color: #6B7C96; }
 .dark .leaflet-tile-pane { filter: brightness(.72) contrast(1.05) saturate(.85); }
 .dark .leaflet-container { background: #0F1A2B; }
+
+.dark .bg-brand-soft { background-color: #14213D; }
+.dark :focus-visible { outline-color: #8FB0FF; }

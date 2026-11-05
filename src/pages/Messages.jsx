@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, MessageCircle, Send } from 'lucide-react';
-import { api } from '../lib/api';
+import { api, assetUrl } from '../lib/api';
+import { priceLabel } from '../lib/format';
 import { useToast } from '../context/ToastContext';
 import { ButtonLink } from '../components/ui';
 import { EmptyState, ErrorState, Loader, PageLoader } from '../components/feedback';
 
 const ROLE = { student: 'Étudiant', landlord: 'Bailleur' };
+const QUICK = ['Le logement est-il toujours disponible ?', 'Puis-je le visiter cette semaine ?', "Quelles sont les conditions d'entrée ?", 'Les charges sont-elles incluses ?'];
 const hhmm = (d) => new Date(d).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 const sameDay = (a, b) => new Date(a).toDateString() === new Date(b).toDateString();
 function dayLabel(d) {
@@ -72,7 +74,7 @@ function Thread({ id }) {
       setSt((s) => {
         const known = new Set(s.msgs.map((m) => m._id));
         const msgs = first ? d.messages : [...s.msgs, ...d.messages.filter((m) => !known.has(m._id))].sort(byDate);
-        return { loading: false, conv: d.conversation, msgs, error: '' };
+        return { loading: false, conv: d.conversation, context: d.context, otherUnread: d.otherUnread, msgs, error: '' };
       });
       if (first || d.messages.length) window.dispatchEvent(new Event('as:messages-read'));
     } catch (e) { if (first) setSt({ loading: false, conv: null, msgs: [], error: e.status === 404 ? '404' : e.message }); }
@@ -104,6 +106,8 @@ function Thread({ id }) {
   if (st.error) return <ErrorState message={st.error} onRetry={() => load(true)} />;
 
   const { conv } = st;
+  const lastMine = [...st.msgs].reverse().find((x) => x.mine)?._id;
+  const iAmStudent = conv.other.role === 'landlord';
   return (
     <section className="flex h-[calc(100dvh-13rem)] min-h-[420px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white" aria-label={`Discussion avec ${conv.other.name}`}>
       <header className="flex items-center gap-3 border-b border-slate-200 px-3 py-3">
@@ -114,6 +118,13 @@ function Thread({ id }) {
           <p className="truncate text-sm text-slate-600">{conv.kind === 'listing' && conv.listing ? <Link to={`/logements/${conv.listing}`} className="font-semibold text-brand">{conv.subject}</Link> : conv.subject}</p>
         </div>
       </header>
+      {st.context && (
+        <Link to={st.context.link} className="flex items-center gap-3 border-b border-slate-200 bg-slate-50 px-3 py-2.5 hover:bg-slate-100">
+          <span className="h-12 w-12 flex-none overflow-hidden rounded-lg bg-blue-100">{st.context.image && <img src={assetUrl(st.context.image)} alt="" className="h-full w-full object-cover" />}</span>
+          <span className="min-w-0 flex-1"><b className="block truncate text-sm">{st.context.title}</b><span className="block truncate text-xs text-slate-600">{st.context.pricing ? `${priceLabel(st.context.pricing)} · ${st.context.neighborhood}` : st.context.sub}</span></span>
+          <span className="text-sm font-bold text-brand">Voir</span>
+        </Link>
+      )}
 
       <div className="flex-1 space-y-1 overflow-y-auto px-3 py-4 md:px-5" onScroll={(e) => { const el = e.currentTarget; stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80; }}>
         {st.msgs.length === 0 && <p className="py-10 text-center text-sm text-slate-600">Aucun message pour l'instant. Écrivez le premier.</p>}
@@ -123,7 +134,7 @@ function Thread({ id }) {
             <div className={`flex ${m.mine ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[85%] whitespace-pre-wrap break-words rounded-2xl px-3.5 py-2 md:max-w-[70%] ${m.mine ? 'rounded-br-md bg-brand text-white' : 'rounded-bl-md bg-slate-200 text-ink'} ${m.pending ? 'opacity-60' : ''}`}>
                 {m.body}
-                <span className={`mt-0.5 block text-right text-[11px] ${m.mine ? 'text-blue-100' : 'text-slate-600'}`}>{hhmm(m.createdAt)}</span>
+                <span className={`mt-0.5 block text-right text-[11px] ${m.mine ? 'text-blue-100' : 'text-slate-600'}`}>{hhmm(m.createdAt)}{m.mine && m._id === lastMine && !m.pending && (st.otherUnread === 0 ? ' · Lu' : ' · Envoyé')}</span>
               </div>
             </div>
           </div>
@@ -131,6 +142,11 @@ function Thread({ id }) {
         <div ref={endRef} />
       </div>
 
+      {st.msgs.length === 0 && iAmStudent && conv.kind === 'listing' && (
+        <div className="flex flex-wrap gap-2 border-t border-slate-200 px-3 pt-3" role="group" aria-label="Messages rapides">
+          {QUICK.map((q) => <button key={q} type="button" onClick={() => setText(q)} className="min-h-[2.5rem] rounded-full border border-slate-300 bg-white px-3.5 text-left text-sm font-semibold hover:border-brand">{q}</button>)}
+        </div>
+      )}
       <form onSubmit={submit} className="flex items-end gap-2 border-t border-slate-200 p-3">
         <textarea value={text} onChange={(e) => setText(e.target.value)} rows={1} maxLength={1000} aria-label="Votre message" placeholder="Écrivez votre message…"
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } }}

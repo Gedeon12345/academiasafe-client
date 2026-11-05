@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Smartphone, SearchX, XCircle } from 'lucide-react';
-import { api } from '../../lib/api';
+import { api, assetUrl } from '../../lib/api';
 import { fcfa } from '../../lib/format';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -72,12 +72,23 @@ export default function Reserve() {
     } catch (err) { toast(err.message, 'error'); }
   };
 
+  const step = booking ? 1 : 0;
+  const steps = (
+    <ol className="mb-5 flex flex-wrap items-center gap-2 text-sm font-semibold" aria-label="Étapes de la réservation">
+      {['Récapitulatif', 'Paiement', 'Reçu'].map((t, i) => (
+        <li key={t} className="flex items-center gap-2" aria-current={i === step ? 'step' : undefined}>
+          <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-extrabold ${i <= step ? 'bg-brand text-white' : 'bg-slate-200 text-slate-600'}`}>{i + 1}</span>
+          <span className={i === step ? '' : 'text-slate-600'}>{t}</span>{i < 2 && <span className="h-px w-6 bg-slate-300" aria-hidden="true" />}
+        </li>
+      ))}
+    </ol>
+  );
   const summary = (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 md:p-5">
-      <h2 className="font-bold">{l.title}</h2>
-      <p className="text-sm text-slate-600">{l.neighborhood}</p>
-      <div className="mt-3 flex items-baseline justify-between border-t border-slate-200 pt-3">
-        <span className="text-slate-600">Acompte pour bloquer le logement</span><b className="text-xl text-brand">{fcfa(amount)}</b>
+    <div className="flex gap-4 rounded-2xl border border-slate-200 bg-white p-4 md:p-5">
+      <div className="h-20 w-24 flex-none overflow-hidden rounded-xl bg-blue-100">{l.images?.[0] && <img src={assetUrl(l.images[0])} alt="" className="h-full w-full object-cover" />}</div>
+      <div className="min-w-0 flex-1">
+        <h2 className="truncate font-display text-lg font-bold">{l.title}</h2><p className="text-sm text-slate-600">{l.neighborhood}</p>
+        <p className="mt-2 flex items-baseline justify-between gap-2 border-t border-slate-200 pt-2"><span className="text-sm text-slate-600">Acompte pour bloquer le logement</span><b className="font-display text-xl text-brand">{fcfa(amount)}</b></p>
       </div>
     </div>
   );
@@ -85,6 +96,7 @@ export default function Reserve() {
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-5 md:py-10">
       <h1 className="mb-4 text-2xl font-extrabold md:text-3xl">Payer l'acompte</h1>
+      {steps}
       {summary}
 
       {!booking && (

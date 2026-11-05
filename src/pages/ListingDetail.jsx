@@ -1,10 +1,10 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, SearchX, Share2 } from 'lucide-react';
+import { BadgeCheck, Car, Check, ChevronLeft, ChevronRight, Droplets, MessageCircle, SearchX, Share2, Snowflake, Sofa, ShieldCheck, Wifi, Zap } from 'lucide-react';
 import { api, qs } from '../lib/api';
-import { fcfa, priceLabel } from '../lib/format';
+import { PERIOD, fcfa } from '../lib/format';
 import { useAuth } from '../context/AuthContext';
-import { Button, ButtonLink, CertBadge, Chip } from '../components/ui';
+import { Button, ButtonLink, CertBadge } from '../components/ui';
 import { EmptyState, ErrorState, Loader, PageLoader } from '../components/feedback';
 import Gallery from '../components/Gallery';
 import LikeButton from '../components/LikeButton';
@@ -18,7 +18,11 @@ import GeoSearchInput from '../components/GeoSearchInput';
 
 const RouteMap = lazy(() => import('../components/RouteMap')); // Leaflet ne se charge que sur la fiche
 
-const box = 'rounded-2xl border border-slate-200 bg-white p-4';
+const box = 'rounded-2xl border border-slate-200 bg-white p-4 md:p-6';
+
+// Une icône pour les commodités les plus courantes.
+const ICONS = [[/eau/i, Droplets], [/wi-?fi|internet/i, Wifi], [/gardien|cam[ée]ra|portail|s[ée]cur/i, ShieldCheck], [/meubl/i, Sofa], [/clim|ventil/i, Snowflake], [/parking|garage/i, Car], [/compteur|[ée]lectr|groupe/i, Zap]];
+const amenityIcon = (name) => ICONS.find(([re]) => re.test(name))?.[1] || Check;
 
 // Trajet vers le campus (calculé à l'enregistrement), vers une autre université proche, ou vers une destination choisie par le visiteur.
 function Commute({ listing }) {
@@ -106,6 +110,8 @@ export default function ListingDetail() {
   if (state.error) return <div className="px-4 py-12"><ErrorState message={state.error} onRetry={() => setTries((t) => t + 1)} /></div>;
 
   const l = state.listing;
+  const c = l.commute;
+  const amount = l.pricing.deposit > 0 ? l.pricing.deposit : l.pricing.price; // même règle que la réservation
   // Partage : WhatsApp affiche un aperçu avec la photo, le titre et le prix de l'annonce.
   const share = async () => {
     const url = state.shareUrl || window.location.href;
@@ -122,56 +128,92 @@ export default function ListingDetail() {
   const actions = (
     <>
       <Button variant="outline" className="flex-1" onClick={contact} disabled={blocked}>Contacter</Button>
-      <Button className="flex-1" onClick={reserve} disabled={blocked || taken}>{taken ? 'Déjà réservé' : 'Réserver'}</Button>
+      <Button variant="accent" className="flex-1" onClick={reserve} disabled={blocked || taken}>{taken ? 'Déjà réservé' : 'Réserver'}</Button>
     </>
   );
+  const facts = c && [['Distance', `${String(c.distanceKm).replace('.', ',')} km`, 'jusqu\'au campus', false], ['À pied', `${c.walk.min} min`, 'gratuit', false], ['Moto', fcfa(c.moto.fare), `${c.moto.min} min`, true], ['Taxi', fcfa(c.taxi.fare), `${c.taxi.min} min`, true]];
 
   return (
-    <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start lg:gap-8 lg:px-4 lg:py-6 2xl:grid-cols-[minmax(0,1fr)_460px]">
-      <div className="min-w-0">
-        <Gallery images={l.images} title={l.title}>
-          <button aria-label="Retour" onClick={() => navigate(-1)} className="absolute left-3 top-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white"><ChevronLeft /></button>
-          <div className="absolute right-3 top-3 z-10 flex items-center gap-1.5"><button onClick={share} aria-label="Partager cette annonce" className="flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-sm"><Share2 size={19} /></button><LikeButton listingId={l._id} count={l.likesCount} /><FavoriteButton listingId={l._id} /></div>
-        </Gallery>
+    <div className="lg:px-4 lg:py-6 xl:px-8">
+      <nav aria-label="Fil d'Ariane" className="hidden items-center gap-1 pb-4 text-sm text-slate-600 lg:flex">
+        <Link to="/" className="hover:text-brand">Accueil</Link><ChevronRight size={14} aria-hidden="true" /><Link to="/logements" className="hover:text-brand">Logements</Link><ChevronRight size={14} aria-hidden="true" /><span className="truncate font-semibold text-slate-800">{l.title}</span>
+      </nav>
 
-        <div className="space-y-5 p-4 lg:px-0">
-          <div>
-            {l.isCertified && <CertBadge />}
-            <h1 className="mt-2 text-[22px] font-extrabold md:text-3xl">{l.title}</h1>
-            <p className="text-sm text-slate-600">
-              {l.neighborhood} · {l.reviewsCount ? <><span className="font-semibold text-amber-700">★ {String(l.averageRating).replace('.', ',')}</span> ({l.reviewsCount} avis)</> : 'Pas encore d’avis'} · {l.viewsCount} vue{l.viewsCount > 1 ? 's' : ''}
-            </p>
-            {l.landlord && <p className="text-sm text-slate-600">Bailleur : {l.landlord.name}{l.landlord.isIdentityVerified && ' · identité vérifiée'}</p>}
-          </div>
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start lg:gap-10 2xl:grid-cols-[minmax(0,1fr)_460px]">
+        <div className="min-w-0">
+          <Gallery images={l.images} title={l.title}>
+            <button aria-label="Retour" onClick={() => navigate(-1)} className="absolute left-3 top-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-sm"><ChevronLeft /></button>
+            <div className="absolute right-3 top-3 z-10 flex items-center gap-1.5"><button onClick={share} aria-label="Partager cette annonce" className="flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-sm"><Share2 size={19} /></button><LikeButton listingId={l._id} count={l.likesCount} /><FavoriteButton listingId={l._id} /></div>
+          </Gallery>
 
-          <div className="flex items-baseline justify-between lg:hidden">
-            <b className="text-[22px] text-brand">{priceLabel(l.pricing)}</b>
-            <span className="text-sm text-slate-600">Caution {fcfa(l.pricing.deposit)}</span>
-          </div>
+          <div className="space-y-9 p-4 pb-28 lg:px-0 lg:pb-0">
+            <header>
+              <div className="flex flex-wrap items-center gap-2">{l.isCertified && <CertBadge />}{taken && <span className="rounded-full bg-red-50 px-2.5 py-1 text-xs font-bold text-red-700">{l.status === 'rented' ? 'Loué' : 'Réservé'}</span>}</div>
+              <h1 className="mt-2 text-3xl font-extrabold leading-tight md:text-5xl">{l.title}</h1>
+              <p className="mt-2 text-slate-600">
+                {l.neighborhood} · {l.reviewsCount ? <><span className="font-semibold text-amber-700">★ {String(l.averageRating).replace('.', ',')}</span> ({l.reviewsCount} avis)</> : 'Pas encore d’avis'} · {l.viewsCount} vue{l.viewsCount > 1 ? 's' : ''}
+              </p>
+              <div className="mt-4 flex items-baseline justify-between rounded-2xl bg-brand-soft p-4 lg:hidden">
+                <span><b className="font-display text-3xl text-brand">{fcfa(l.pricing.price)}</b> <span className="text-slate-600">/ {PERIOD[l.pricing.period]}</span></span>
+                <span className="text-sm text-slate-600">Caution {fcfa(l.pricing.deposit)}</span>
+              </div>
+            </header>
 
-          {l.description && <ExpandableText text={l.description} />}
-          {l.amenities.length > 0 && <div className="flex flex-wrap gap-1.5">{l.amenities.map((a) => <Chip key={a}>{a}</Chip>)}</div>}
+            {facts && (
+              <dl className="grid grid-cols-2 gap-3 md:grid-cols-4" aria-label="Le trajet en un coup d'œil">
+                {facts.map(([k, v, sub, yellow]) => (
+                  <div key={k} className={`rounded-2xl p-4 ${yellow ? 'bg-taxi text-ink' : 'border border-slate-200 bg-white'}`}>
+                    <dt className={`text-sm font-semibold ${yellow ? '' : 'text-slate-600'}`}>{k}</dt><dd className="font-display text-2xl font-extrabold">{v}</dd><dd className={`text-sm ${yellow ? '' : 'text-slate-600'}`}>{sub}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
 
-          <div className="grid gap-4 md:grid-cols-2 md:items-start">
+            <section aria-labelledby="apropos">
+              <h2 id="apropos" className="mb-3 text-2xl font-extrabold">Le logement</h2>
+              {l.description ? <ExpandableText text={l.description} /> : <p className="text-slate-600">Le bailleur n'a pas ajouté de description.</p>}
+              {l.amenities.length > 0 && (
+                <ul className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-3">
+                  {l.amenities.map((a) => { const Icon = amenityIcon(a); return <li key={a} className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm font-semibold"><Icon size={19} className="flex-none text-brand" aria-hidden="true" />{a}</li>; })}
+                </ul>
+              )}
+            </section>
+
             <Commute listing={l} />
-            <ReviewsSection listing={l} className="md:col-span-2" />
+
+            {l.landlord && (
+              <section className={`${box} flex flex-wrap items-center gap-4`} aria-labelledby="bailleur">
+                <span className="flex h-14 w-14 flex-none items-center justify-center rounded-full bg-brand font-display text-2xl font-extrabold text-white" aria-hidden="true">{l.landlord.name.slice(0, 1).toUpperCase()}</span>
+                <div className="min-w-0 flex-1">
+                  <h2 id="bailleur" className="text-lg font-extrabold">{l.landlord.name}</h2>
+                  <p className="flex items-center gap-1.5 text-sm text-slate-600">{l.landlord.isIdentityVerified ? <><BadgeCheck size={16} className="text-safe-dark" aria-hidden="true" />Identité vérifiée</> : 'Bailleur'} · réponses dans la messagerie</p>
+                </div>
+                {!blocked && <Button variant="outline" onClick={contact}><MessageCircle size={18} className="mr-2" aria-hidden="true" />Écrire au bailleur</Button>}
+              </section>
+            )}
+
+            <ReviewsSection listing={l} />
+            {blocked && <p className="text-sm text-slate-600 lg:hidden">Les actions de réservation sont réservées aux comptes étudiants.</p>}
           </div>
-          {blocked && <p className="text-sm text-slate-600 lg:hidden">Les actions de réservation sont réservées aux comptes étudiants.</p>}
         </div>
+
+        <ContactDialog open={contactOpen} onClose={() => setContactOpen(false)} start={{ kind: 'listing', listingId: l._id }} title="Écrire au bailleur" hint={`À propos de « ${l.title} ». Le bailleur répond dans votre messagerie.`} />
+
+        <aside className="hidden lg:block">
+          <div className="sticky top-24 rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
+            <p className="text-sm font-semibold text-slate-600">Loyer</p>
+            <p className="font-display text-4xl font-extrabold text-brand">{fcfa(l.pricing.price)}<span className="text-base font-semibold text-slate-600"> / {PERIOD[l.pricing.period]}</span></p>
+            <p className="text-sm text-slate-600">Caution : {fcfa(l.pricing.deposit)}</p>
+            <div className="mt-5 flex flex-col gap-2.5"><Button variant="accent" className="h-12 w-full text-base" onClick={reserve} disabled={blocked || taken}>{taken ? 'Déjà réservé' : "Réserver ce logement"}</Button><Button variant="outline" className="w-full" onClick={contact} disabled={blocked}>Contacter le bailleur</Button></div>
+            {blocked && <p className="mt-3 text-sm text-slate-600">Les actions de réservation sont réservées aux comptes étudiants.</p>}
+            <ul className="mt-5 space-y-2.5 border-t border-slate-200 pt-4 text-sm text-slate-700">
+              {[`Acompte de ${fcfa(amount)} par Mobile Money`, 'Reçu PDF avec QR code vérifiable', 'Échanges dans la messagerie : votre numéro reste privé'].map((t) => <li key={t} className="flex items-start gap-2"><Check size={17} className="mt-0.5 flex-none text-safe-dark" strokeWidth={3} aria-hidden="true" />{t}</li>)}
+            </ul>
+          </div>
+        </aside>
       </div>
 
-      <ContactDialog open={contactOpen} onClose={() => setContactOpen(false)} start={{ kind: 'listing', listingId: l._id }} title="Écrire au bailleur" hint={`À propos de « ${l.title} ». Le bailleur répond dans votre messagerie.`} />
-
-      <aside className="hidden lg:block">
-        <div className="sticky top-32 space-y-3 rounded-2xl border border-slate-200 bg-white p-5">
-          <b className="block text-2xl text-brand">{priceLabel(l.pricing)}</b>
-          <p className="text-sm text-slate-600">Caution {fcfa(l.pricing.deposit)}</p>
-          <div className="flex gap-2.5">{actions}</div>
-          {blocked && <p className="text-sm text-slate-600">Les actions de réservation sont réservées aux comptes étudiants.</p>}
-        </div>
-      </aside>
-
-      <div className="fixed inset-x-0 bottom-16 z-20 border-t border-slate-200 bg-white px-4 py-3 md:bottom-0 lg:hidden">
+      <div className="fixed inset-x-0 bottom-16 z-20 border-t border-slate-200 bg-white/95 px-4 py-3 backdrop-blur md:bottom-0 lg:hidden">
         <div className="mx-auto flex max-w-2xl gap-2.5">{actions}</div>
       </div>
     </div>

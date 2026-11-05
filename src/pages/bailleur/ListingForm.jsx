@@ -85,6 +85,16 @@ export default function ListingForm() {
 
   const kept = existing.filter((p) => !removed.includes(p));
   const room = MAX_IMAGES - kept.length - files.length;
+  // Qualité de l'annonce : de petits objectifs concrets, qui rendent l'annonce plus convaincante.
+  const checks = [
+    [f.title.trim().length >= 10, 'Un titre clair (10 caractères ou plus)'],
+    [Number(f.price) > 0, 'Le loyer'],
+    [!!loc, "L'adresse choisie dans la liste"],
+    [kept.length + files.length >= 3, 'Au moins 3 photos'],
+    [f.description.trim().length >= 100, 'Une description d’au moins 100 caractères'],
+    [amenities.length >= 3, 'Au moins 3 commodités'],
+  ];
+  const pct = Math.round((checks.filter((c) => c[0]).length / checks.length) * 100);
   const addFiles = async (e) => {
     const list = [...e.target.files];
     e.target.value = '';
@@ -199,7 +209,14 @@ export default function ListingForm() {
         </section>
       </div>
 
-      <div className="min-w-0 space-y-6 lg:sticky lg:top-32 lg:self-start">
+      <div className="min-w-0 space-y-6 lg:sticky lg:top-24 lg:self-start">
+        <section className={card} aria-labelledby="qualite">
+          <div className="flex items-baseline justify-between"><h2 id="qualite" className="text-lg font-bold">Qualité de l'annonce</h2><b className="font-display text-2xl text-brand">{pct} %</b></div>
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-200" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Qualité de l'annonce"><div className="h-full rounded-full bg-safe transition-all" style={{ width: `${pct}%` }} /></div>
+          <ul className="mt-3 space-y-1.5 text-sm">
+            {checks.map(([ok, label]) => <li key={label} className="flex items-start gap-2"><span className={`mt-0.5 flex h-4 w-4 flex-none items-center justify-center rounded-full text-[10px] font-bold ${ok ? 'bg-safe-dark text-white' : 'border border-slate-400'}`} aria-hidden="true">{ok ? '✓' : ''}</span><span className={ok ? 'text-slate-600 line-through' : ''}>{label}</span><span className="sr-only">{ok ? ' (fait)' : ' (à faire)'}</span></li>)}
+          </ul>
+        </section>
         <section className={`${card} space-y-3`}>
           <h2 className="text-lg font-bold">Trajet vers le campus</h2>
           {!loc ? <p className="text-sm text-slate-600">Choisissez l'adresse : la distance et le trajet se calculent tout seuls.</p>
